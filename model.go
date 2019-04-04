@@ -38,8 +38,8 @@ type model struct {
 func newModel(method string, options []Option) model {
 	this := &model{
 		method:  method,
-		scheme:  "https",
-		host:    "storage.googleapis.com",
+		scheme:  defaultScheme,
+		host:    defaultHost,
 		context: context.Background(),
 	}
 
@@ -98,11 +98,11 @@ func (this model) appendToBuffer(buffer io.Writer) {
 	_, _ = fmt.Fprintf(buffer, "%s\n%s\n%s\n%s\n", this.method, this.contentMD5, this.contentType, this.epoch)
 
 	if this.encryption != ServerSideEncryptionNone && this.method == PUT {
-		_, _ = fmt.Fprintf(buffer, "x-goog-encryption-algorithm:%v\n", this.encryption)
+		_, _ = fmt.Fprintf(buffer, "%s:%v\n", headerEncryptionAlgorithm, this.encryption)
 	}
 
 	if len(this.generation) > 0 && this.method == PUT {
-		_, _ = fmt.Fprintf(buffer, "x-goog-if-generation-match:%s\n", this.generation)
+		_, _ = fmt.Fprintf(buffer, "%s:%s\n", headerGeneration, this.generation)
 	}
 
 	_, _ = fmt.Fprintf(buffer, "%s", this.objectKey)
@@ -111,9 +111,9 @@ func (this model) appendToBuffer(buffer io.Writer) {
 func (this model) buildSignedURL(signature string) string {
 	targetURL := &url.URL{Scheme: this.scheme, Host: this.host, Path: this.objectKey}
 	query := targetURL.Query()
-	query.Set("GoogleAccessId", this.credentials.AccessID)
-	query.Set("Expires", this.epoch)
-	query.Set("Signature", signature)
+	query.Set(queryAccessID, this.credentials.AccessID)
+	query.Set(queryExpires, this.epoch)
+	query.Set(querySignature, signature)
 	targetURL.RawQuery = query.Encode()
 	return targetURL.String()
 }
@@ -124,26 +124,40 @@ func (this model) appendHeaders(request *http.Request) {
 
 	headers := request.Header
 	if len(this.contentType) > 0 {
-		headers.Set("Content-Type", this.contentType)
+		headers.Set(headerContentType, this.contentType)
 	}
 
 	if len(this.contentMD5) > 0 {
-		headers.Set("Content-MD5", this.contentMD5)
+		headers.Set(headerContentMD5, this.contentMD5)
 	}
 
 	if len(this.contentEncoding) > 0 {
-		headers.Set("Content-Encoding", this.contentEncoding)
+		headers.Set(headerContentEncoding, this.contentEncoding)
 	}
 
 	if len(this.generation) > 0 && this.method == PUT {
-		headers.Set("x-goog-if-generation-match", this.generation)
+		headers.Set(headerGeneration, this.generation)
 	} else if len(this.etag) > 0 && this.method == GET {
-		headers.Set("If-None-Match", this.etag)
+		headers.Set(headerIfNoneMatch, this.etag)
 	}
 
 	if this.encryption != ServerSideEncryptionNone {
-		headers.Set("x-goog-encryption-algorithm", this.encryption.String())
+		headers.Set(headerEncryptionAlgorithm, this.encryption.String())
 	}
 }
 
 func defaultExpiration() time.Time { return time.Now().UTC().Add(defaultExpireTime) }
+
+const (
+	defaultScheme             = "https"
+	defaultHost               = "storage.googleapis.com"
+	headerContentType         = "Content-Type"
+	headerContentMD5          = "Content-MD5"
+	headerContentEncoding     = "Content-Encoding"
+	headerIfNoneMatch         = "If-None-Match"
+	headerEncryptionAlgorithm = "x-goog-encryption-algorithm"
+	headerGeneration          = "x-goog-if-generation-match"
+	queryAccessID             = "GoogleAccessId"
+	queryExpires              = "Expires"
+	querySignature            = "Signature"
+)
