@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"errors"
+	"io"
 )
 
 func ParseCredentialsFromJSON(raw []byte) (Credentials, error) {
@@ -19,7 +20,7 @@ func ParseCredentialsFromJSON(raw []byte) (Credentials, error) {
 
 	parsed := serviceAccount{}
 	if err := json.Unmarshal(raw, &parsed); err != nil {
-		return Credentials{}, err
+		return Credentials{}, ErrMalformedJSON
 	} else {
 		return NewCredentials(parsed.ClientEmail, []byte(parsed.PrivateKeyPEM))
 	}
@@ -43,14 +44,15 @@ func NewCredentials(accessID string, privateKey []byte) (Credentials, error) {
 /* ////////////////////////////////////////////////////////////////////////////////////////////////////////////////// */
 
 type PrivateKey struct {
-	inner *rsa.PrivateKey
+	inner  *rsa.PrivateKey
+	random io.Reader
 }
 
 func newPrivateKey(raw []byte) (PrivateKey, error) {
 	if parsed, err := tryReadPrivateKey(raw); err != nil {
-		return PrivateKey{}, err
+		return PrivateKey{}, ErrMalformedPrivateKey
 	} else {
-		return PrivateKey{inner: parsed}, err
+		return PrivateKey{inner: parsed, random: rand.Reader}, err
 	}
 }
 func tryReadPrivateKey(key []byte) (*rsa.PrivateKey, error) {
@@ -58,17 +60,13 @@ func tryReadPrivateKey(key []byte) (*rsa.PrivateKey, error) {
 		key = decoded.Bytes
 	}
 
-	if parsed, err := tryParsePKCS8(key); err == nil {
-		return parsed, nil
-	} else {
-		return x509.ParsePKCS1PrivateKey(key)
-	}
+	return tryParsePKCS8(key)
 }
 func tryParsePKCS8(key []byte) (*rsa.PrivateKey, error) {
 	if parsed, err := x509.ParsePKCS8PrivateKey(key); err != nil {
-		return nil, err
-	} else if parsed, ok := parsed.(*rsa.PrivateKey); !ok {
 		return nil, ErrMalformedPrivateKey
+	} else if parsed, ok := parsed.(*rsa.PrivateKey); !ok {
+		return nil, ErrUnsupportedPrivateKey // e.g. ecdsa.PrivateKey
 	} else {
 		return parsed, nil
 	}
@@ -76,11 +74,13 @@ func tryParsePKCS8(key []byte) (*rsa.PrivateKey, error) {
 
 func (this *PrivateKey) Sign(raw []byte) ([]byte, error) {
 	if this.inner == nil {
-		return nil, nil // TODO
+		return nil, nil // no private key to sign with
 	}
 
 	sum := sha256.Sum256(raw)
-	return rsa.SignPKCS1v15(rand.Reader, this.inner, crypto.SHA256, sum[:])
+	return rsa.SignPKCS1v15(this.random, this.inner, crypto.SHA256, sum[:])
 }
 
 var ErrMalformedPrivateKey = errors.New("malformed private key")
+var ErrUnsupportedPrivateKey = errors.New("unsupported private key type")
+var ErrMalformedJSON = errors.New("malformed JSON")

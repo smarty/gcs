@@ -3,6 +3,7 @@ package gcs
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"io"
 	"strconv"
 	"strings"
@@ -60,7 +61,7 @@ func PutWithContentLength(value int64) Option {
 	return func(this *model) { this.contentLength = value }
 }
 func PutWithContentMD5(value []byte) Option {
-	return func(this *model) { this.contentMD5 = encoding.EncodeToString(value) }
+	return func(this *model) { this.contentMD5 = base64.StdEncoding.EncodeToString(value) }
 }
 func PutWithContentEncoding(value string) Option {
 	return func(this *model) { this.contentEncoding = value }

@@ -161,3 +161,5 @@ const (
 	querySignature            = "Signature"
 	encryptionAlgorithm       = "AES256"
 )
+
+var defaultExpireTime = time.Second * 30

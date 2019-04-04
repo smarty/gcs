@@ -148,9 +148,9 @@ func (this *OptionFixture) TestPUT_ContentEncoding() {
 
 func (this *OptionFixture) TestPUT_ContentMD5() {
 	request, _ := NewRequest(PUT, WithBucket("bucket"), WithResource("file.txt"),
-		PutWithContentString("hi"), PutWithContentMD5([]byte{0, 1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}))
+		PutWithContentString("hi"), PutWithContentMD5([]byte{0, 1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, 15}))
 
-	this.So(request.Header.Get("Content-MD5"), should.Equal, "AAECAwQFBwgJCgsMDQ4PEA==")
+	this.So(request.Header.Get("Content-MD5"), should.Equal, "AAECAwQFBwgJCgsMDQ4P")
 }
 
 func (this *OptionFixture) TestPUT_ContentLength() {
@@ -205,4 +205,30 @@ func (this *OptionFixture) TestPUT_ServerSideEncryption() {
 		PutWithContentString("hi"), PutWithServerSideEncryption())
 
 	this.So(request.Header.Get("x-goog-encryption-algorithm"), should.Equal, "AES256")
+}
+
+func (this *OptionFixture) TestGET_WithCredentials() {
+	credentials, _ := ParseCredentialsFromJSON(sampleJSON)
+	credentials.PrivateKey.random = nil // make it deterministic so the signature doesn't change between test runs
+	frozen := time.Unix(1554410829, 0)  // fixed time so signature is deterministic
+
+	request, _ := NewRequest(GET, WithBucket("bucket"), WithResource("file.txt"),
+		WithCredentials(credentials), WithExpiration(frozen))
+
+	this.So(request.URL.Query().Get("Signature"), should.Equal, "PzVwB1N71A/p6wL7gP/Oh/nZdnsuoXQCszqFr/Q3jo6B5+ozZpuPIcuCW80+wtwUSBnKQJM4lcTVx6DtYrj2F3B/norqJPVdOHSCcG6bvGZ6oUjB2FQNzpQ1DyjY/mN0V8ziXe+FYPZzz6X0ewHJKaTHZb63BNQO92aMj/NMFYlN9FjdfdlE1G2La4oiT+Cjok47ncWw5UwhBXvJBEm8vgTtK2OU4AyqK+2vnOR/5PMBwTtU+82CmrnckOPeNZDyURiJvJenybIxrqOLzaaAsXvphQyz11XWt4Z8b+nqscQezuS6CcqKJiLDFvRcX0wXbzTxeOl00QWX3XGLaMUoGg==")
+}
+
+func (this *OptionFixture) TestPUT_WithCredentials() {
+	credentials, _ := ParseCredentialsFromJSON(sampleJSON)
+	credentials.PrivateKey.random = nil // make it deterministic so the signature doesn't change between test runs
+	frozen := time.Unix(1554410829, 0)  // fixed time so signature is deterministic
+
+	request, _ := NewRequest(PUT, WithBucket("bucket"), WithResource("file.txt"),
+		WithCredentials(credentials),
+		WithExpiration(frozen),
+		PutWithContentMD5([]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5}),
+		PutWithContentString("content"),
+		PutWithContentType("content-type"))
+
+	this.So(request.URL.Query().Get("Signature"), should.Equal, "Y+lLTW0t4PU32OgEHqyGCUYcVUIUn3eFiyotfzSTJStD3K1w7dHZS0RmA1W6Wq+5NjaxzykMHz6IV1pjqs/azXaNO+cR7RyRzh8W46EHHtgfSv/joxMFzgNnEzHvqIKovbhyyVxTe4RSz5+XaUdapl3YNUHpt3BZzxNlMEB25vlqKr6fyHW0TaJ0EpI99sa6Xkxs/2hCqSb6MlycLDvw/0Ig3GP0P+hOApYQ67bcYEot8zKqdWjPcRStVyJvccEkrt30MVqMMPE0AP9YUYcPfdBbasc0yAroVaBabv03+u4V+xRI64Ijc7e3Vlr5B2leW6Fz1hHoRNlwBW51Aby3+A==")
 }

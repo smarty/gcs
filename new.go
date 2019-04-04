@@ -1,10 +1,8 @@
 package gcs
 
 import (
-	"encoding/base64"
 	"errors"
 	"net/http"
-	"time"
 )
 
 func NewRequest(method string, options ...Option) (*http.Request, error) {
@@ -27,7 +25,4 @@ var (
 	ErrBucketMissing          = errors.New("bucket is required")
 	ErrResourceMissing        = errors.New("object resource key is required")
 	ErrContentMissing         = errors.New("content payload is required")
-
-	encoding          = base64.StdEncoding
-	defaultExpireTime = time.Second * 30
 )
