@@ -22,8 +22,8 @@ const (
 )
 
 var (
-	ErrMissingHTTPMethod      = errors.New("missing HTTP method")
-	ErrUnrecognizedHTTPMethod = errors.New("unrecognized HTTP method")
+	ErrHTTPMethodMissing      = errors.New("missing HTTP method")
+	ErrHTTPMethodUnrecognized = errors.New("unrecognized HTTP method")
 	ErrBucketMissing          = errors.New("bucket is required")
 	ErrResourceMissing        = errors.New("object resource key is required")
 	ErrContentMissing         = errors.New("content payload is required")

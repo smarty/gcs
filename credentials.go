@@ -75,6 +75,10 @@ func tryParsePKCS8(key []byte) (*rsa.PrivateKey, error) {
 }
 
 func (this *PrivateKey) Sign(raw []byte) ([]byte, error) {
+	if this.inner == nil {
+		return nil, nil // TODO
+	}
+
 	sum := sha256.Sum256(raw)
 	return rsa.SignPKCS1v15(rand.Reader, this.inner, crypto.SHA256, sum[:])
 }

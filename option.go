@@ -14,7 +14,7 @@ type Option func(*model)
 func WithCredentials(credentials Credentials) Option {
 	return func(this *model) { this.credentials = credentials }
 }
-func WithHost(scheme, host string) Option {
+func WithEndpoint(scheme, host string) Option {
 	return func(this *model) { this.scheme = scheme; this.host = host }
 }
 func WithBucket(value string) Option {
@@ -67,7 +67,6 @@ func PutWithContentEncoding(value string) Option {
 	return func(this *model) { this.contentEncoding = value }
 }
 
-func Nop(_ *model) {}
 func WithCompositeOption(options ...Option) Option {
 	return func(this *model) { this.applyOptions(options) }
 }

@@ -59,9 +59,9 @@ func (this *model) applyOptions(options []Option) {
 }
 func (this model) validate() error {
 	if len(this.method) == 0 {
-		return ErrMissingHTTPMethod
+		return ErrHTTPMethodMissing
 	} else if this.method != GET && this.method != PUT {
-		return ErrUnrecognizedHTTPMethod
+		return ErrHTTPMethodUnrecognized
 	} else if len(this.bucket) == 0 {
 		return ErrBucketMissing
 	} else if len(this.resource) == 0 {
@@ -142,7 +142,7 @@ func (this model) appendHeaders(request *http.Request) {
 	}
 
 	if this.encryption != ServerSideEncryptionNone {
-		headers.Set("x-goog-if-generation-match", this.encryption.String())
+		headers.Set("x-goog-encryption-algorithm", this.encryption.String())
 	}
 }
 
