@@ -202,22 +202,7 @@ func (this *OptionFixture) TestPUT_Generation() {
 
 func (this *OptionFixture) TestPUT_ServerSideEncryption() {
 	request, _ := NewRequest(PUT, WithBucket("bucket"), WithResource("file.txt"),
-		PutWithContentString("hi"), PutWithServerSideEncryption(ServerSideEncryptionAES256))
+		PutWithContentString("hi"), PutWithServerSideEncryption())
 
-	this.So(request.Header.Get("x-goog-encryption-algorithm"), should.Equal, ServerSideEncryptionAES256.String())
+	this.So(request.Header.Get("x-goog-encryption-algorithm"), should.Equal, "AES256")
 }
-
-//
-// func (this *OptionFixture) TestSignedPut_ExpireTimeForcesCreationOfSignatureInQueryString() {
-// 	requestWithExpiration, _ := NewRequest(PUT, WithBucket("bucket"), WithResource("file.txt"), ContentString("hi"), ExpireTime(time.Second*30))
-// 	requestWithoutExpiration, _ := NewRequest(PUT, WithBucket("bucket"), WithResource("file.txt"), ContentString("hi"))
-//
-// 	this.So(requestWithExpiration.URL.Query(), should.NotBeEmpty)
-// 	this.So(requestWithoutExpiration.URL.Query(), should.BeEmpty)
-// }
-//
-// func (this *OptionFixture) TestIfNoneMatchAddHeader() {
-// 	request, _ := NewRequest(GET, WithBucket("bucket"), WithResource("file.txt"), IfNoneMatch("etag"))
-// 	this.So(request.Header.Get("If-None-Match"), should.Equal, "etag")
-// }
-//

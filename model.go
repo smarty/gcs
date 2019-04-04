@@ -13,22 +13,21 @@ import (
 )
 
 type model struct {
-	credentials      Credentials
-	method           string
-	host             string
-	scheme           string
-	bucket           string
-	resource         string
-	contentMD5       string
-	contentType      string
-	contentEncoding  string
-	generation       string
-	etag             string
-	context          context.Context
-	encryption       ServerSideEncryption
-	hasContentLength bool
-	contentLength    int64
-	content          io.ReadSeeker
+	context         context.Context
+	credentials     Credentials
+	method          string
+	host            string
+	scheme          string
+	bucket          string
+	resource        string
+	contentMD5      string
+	contentType     string
+	contentEncoding string
+	generation      string
+	etag            string
+	encryption      bool
+	contentLength   int64
+	content         io.Reader
 
 	// computed fields
 	objectKey string
@@ -78,6 +77,7 @@ func (this model) buildRequest() (*http.Request, error) {
 	} else if request, err := http.NewRequest(this.method, this.buildSignedURL(signature), this.content); err != nil {
 		return nil, err
 	} else {
+		request.ContentLength = this.contentLength
 		this.appendHeaders(request)
 		return request.WithContext(this.context), nil
 	}
@@ -95,17 +95,18 @@ func (this model) calculateSignature() (string, error) {
 func (this model) appendToBuffer(buffer io.Writer) {
 	// https://cloud.google.com/storage/docs/access-control/signed-urls
 	// https://cloud.google.com/storage/docs/access-control/signing-urls-manually
-	_, _ = fmt.Fprintf(buffer, "%s\n%s\n%s\n%s\n", this.method, this.contentMD5, this.contentType, this.epoch)
-
-	if this.encryption != ServerSideEncryptionNone && this.method == PUT {
-		_, _ = fmt.Fprintf(buffer, "%s:%v\n", headerEncryptionAlgorithm, this.encryption)
+	appendTo(buffer, "%s\n%s\n%s\n%s\n", this.method, this.contentMD5, this.contentType, this.epoch)
+	appendIf(this.encryption && this.method == PUT, buffer, "%s:%v\n", headerEncryptionAlgorithm, this.encryption)
+	appendIf(len(this.generation) > 0 && this.method == PUT, buffer, "%s:%s\n", headerGeneration, this.generation)
+	appendTo(buffer, "%s", this.objectKey)
+}
+func appendIf(condition bool, writer io.Writer, format string, values ...interface{}) {
+	if condition {
+		appendTo(writer, format, values...)
 	}
-
-	if len(this.generation) > 0 && this.method == PUT {
-		_, _ = fmt.Fprintf(buffer, "%s:%s\n", headerGeneration, this.generation)
-	}
-
-	_, _ = fmt.Fprintf(buffer, "%s", this.objectKey)
+}
+func appendTo(writer io.Writer, format string, values ...interface{}) {
+	_, _ = fmt.Fprintf(writer, format, values...)
 }
 
 func (this model) buildSignedURL(signature string) string {
@@ -118,31 +119,29 @@ func (this model) buildSignedURL(signature string) string {
 	return targetURL.String()
 }
 func (this model) appendHeaders(request *http.Request) {
-	if this.hasContentLength {
-		request.ContentLength = this.contentLength
-	}
-
 	headers := request.Header
-	if len(this.contentType) > 0 {
-		headers.Set(headerContentType, this.contentType)
-	}
 
-	if len(this.contentMD5) > 0 {
-		headers.Set(headerContentMD5, this.contentMD5)
+	if this.method == GET {
+		this.appendGETHeaders(headers)
+	} else if this.method == PUT {
+		this.appendPUTHeaders(headers)
 	}
-
-	if len(this.contentEncoding) > 0 {
-		headers.Set(headerContentEncoding, this.contentEncoding)
-	}
-
-	if len(this.generation) > 0 && this.method == PUT {
-		headers.Set(headerGeneration, this.generation)
-	} else if len(this.etag) > 0 && this.method == GET {
+}
+func (this model) appendGETHeaders(headers http.Header) {
+	if len(this.etag) > 0 {
 		headers.Set(headerIfNoneMatch, this.etag)
 	}
-
-	if this.encryption != ServerSideEncryptionNone {
-		headers.Set(headerEncryptionAlgorithm, this.encryption.String())
+}
+func (this model) appendPUTHeaders(headers http.Header) {
+	appendHeaderIf(len(this.contentType) > 0, headers, headerContentType, this.contentType)
+	appendHeaderIf(len(this.contentMD5) > 0, headers, headerContentMD5, this.contentMD5)
+	appendHeaderIf(len(this.contentEncoding) > 0, headers, headerContentEncoding, this.contentEncoding)
+	appendHeaderIf(len(this.generation) > 0, headers, headerGeneration, this.generation)
+	appendHeaderIf(this.encryption, headers, headerEncryptionAlgorithm, encryptionAlgorithm)
+}
+func appendHeaderIf(condition bool, headers http.Header, name, value string) {
+	if condition {
+		headers.Set(name, value)
 	}
 }
 
@@ -160,4 +159,5 @@ const (
 	queryAccessID             = "GoogleAccessId"
 	queryExpires              = "Expires"
 	querySignature            = "Signature"
+	encryptionAlgorithm       = "AES256"
 )

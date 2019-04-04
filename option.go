@@ -37,8 +37,8 @@ func PutWithGeneration(value string) Option {
 	return func(this *model) { this.generation = strings.TrimSpace(value) }
 }
 
-func PutWithServerSideEncryption(value ServerSideEncryption) Option {
-	return func(this *model) { this.encryption = value }
+func PutWithServerSideEncryption() Option {
+	return func(this *model) { this.encryption = true }
 }
 func PutWithContentString(value string) Option {
 	return func(this *model) { PutWithContentBytes([]byte(value))(this) }
@@ -47,10 +47,9 @@ func PutWithContentBytes(value []byte) Option {
 	return func(this *model) {
 		this.content = bytes.NewReader(value)
 		this.contentLength = int64(len(value))
-		this.hasContentLength = true
 	}
 }
-func PutWithContent(value io.ReadSeeker) Option {
+func PutWithContent(value io.Reader) Option {
 	return func(this *model) { this.content = value }
 }
 
@@ -58,7 +57,7 @@ func PutWithContentType(value string) Option {
 	return func(this *model) { this.contentType = strings.TrimSpace(value) }
 }
 func PutWithContentLength(value int64) Option {
-	return func(this *model) { this.contentLength = value; this.hasContentLength = true }
+	return func(this *model) { this.contentLength = value }
 }
 func PutWithContentMD5(value []byte) Option {
 	return func(this *model) { this.contentMD5 = encoding.EncodeToString(value) }
@@ -77,21 +76,3 @@ func WithConditionalOption(option Option, condition bool) Option {
 		return nil
 	}
 }
-
-/* ////////////////////////////////////////////////////////////////////////////////////////////////////////////////// */
-
-type ServerSideEncryption int
-
-func (this ServerSideEncryption) String() string {
-	switch this {
-	case ServerSideEncryptionAES256:
-		return "AES256"
-	default:
-		return ""
-	}
-}
-
-const (
-	ServerSideEncryptionNone   ServerSideEncryption = 0
-	ServerSideEncryptionAES256 ServerSideEncryption = 1
-)
