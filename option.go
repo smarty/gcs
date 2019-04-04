@@ -33,8 +33,8 @@ func WithContext(value context.Context) Option {
 func GetWithETag(value string) Option {
 	return func(this *model) { this.etag = strings.TrimSpace(value) }
 }
-func PutWithGeneration(value int64) Option {
-	return func(this *model) { this.generation = strconv.FormatInt(value, 10) }
+func PutWithGeneration(value string) Option {
+	return func(this *model) { this.generation = strings.TrimSpace(value) }
 }
 
 func PutWithServerSideEncryption(value ServerSideEncryption) Option {
