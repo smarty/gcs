@@ -38,9 +38,6 @@ func PutWithGeneration(value string) Option {
 	return func(this *model) { this.generation = strings.TrimSpace(value) }
 }
 
-func PutWithServerSideEncryption() Option {
-	return func(this *model) { this.encryption = true }
-}
 func PutWithContentString(value string) Option {
 	return func(this *model) { PutWithContentBytes([]byte(value))(this) }
 }

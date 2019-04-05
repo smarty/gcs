@@ -200,13 +200,6 @@ func (this *OptionFixture) TestPUT_Generation() {
 	this.So(request.Header.Get("x-goog-if-generation-match"), should.Equal, "42")
 }
 
-func (this *OptionFixture) TestPUT_ServerSideEncryption() {
-	request, _ := NewRequest(PUT, WithBucket("bucket"), WithResource("file.txt"),
-		PutWithContentString("hi"), PutWithServerSideEncryption())
-
-	this.So(request.Header.Get("x-goog-encryption-algorithm"), should.Equal, "AES256")
-}
-
 func (this *OptionFixture) TestGET_WithCredentials() {
 	credentials, _ := ParseCredentialsFromJSON(sampleJSON)
 	credentials.PrivateKey.random = nil // make it deterministic so the signature doesn't change between test runs
@@ -229,8 +222,7 @@ func (this *OptionFixture) TestPUT_WithCredentials() {
 		PutWithContentMD5([]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5}),
 		PutWithContentString("content"),
 		PutWithContentType("content-type"),
-		PutWithServerSideEncryption(),
 		PutWithGeneration("12345678"))
 
-	this.So(request.URL.Query().Get("Signature"), should.Equal, "kiB3dtLcjNtiKsAS6dKhQ88ku7NQ4iBxA0A6wsKYQeIoGmrxTskT+G2AuQplR3izS/ujGS/Y7Y98QZEfMmdYA0oqxJGECs+y1PWCUK245ctBjIrvz/o1Aw58705uLImhXiLRF0WAfwBJEiDp8pz0/aiDQVy7kSs4rwkvnhGkiHixlS1ZFbSOwMYcdU/6Xsxd9AX0BCSskgRzgtbtG5298GYH2Adlvw7pcsT7nELhgWvaDxzZUoOxKPbp2+7iMOJ/ta+ceumn7G3/Ld+OtbSmu/pYCnE+GWOxjQd557ol05Fter1Sk9jW0pTNtL7wsEtyMH4TYWglDjTYzbtRXDTVbA==")
+	this.So(request.URL.Query().Get("Signature"), should.Equal, "VHcBMifvvm1Vg1rbaoXbOs3a2IbMBBx/LInfjRD/lxgA4njeFS7K1CIYHcTlVZNrJFB0vWo8/424wTcgh0WvMRHCsJgN0jm48jjRsASazKriGzO3Y86COcdbpG8Ifs0565ahC0cHY7+/U6TT7W4N11XNYEh6WU+MlMDrFAaPCCUOeHaUwcz6NAUDF5cZQdXAOYQrtFhi2ODGzZ9Y/rlUNiEdXWdIx46+gIWNkYXP6JsIRDHnZGAcZPUhzF6r6YyPMto/MhwKCjx4kxR/jSp2hDa8TAfVULXBTAlqxbWbTpDvht8XcZPx6/T/TnYcZHhKyIQIWCvQzIrrJLCX8rmVpA==")
 }

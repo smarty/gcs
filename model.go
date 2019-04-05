@@ -96,7 +96,6 @@ func (this model) appendToBuffer(buffer io.Writer) {
 	// https://cloud.google.com/storage/docs/access-control/signed-urls
 	// https://cloud.google.com/storage/docs/access-control/signing-urls-manually
 	appendTo(buffer, "%s\n%s\n%s\n%s\n", this.method, this.contentMD5, this.contentType, this.epoch)
-	appendIf(this.encryption && this.method == PUT, buffer, "%s:%s\n", headerEncryptionAlgorithm, encryptionAlgorithm)
 	appendIf(len(this.generation) > 0 && this.method == PUT, buffer, "%s:%s\n", headerGeneration, this.generation)
 	appendTo(buffer, "%s", this.objectKey)
 }
@@ -137,7 +136,6 @@ func (this model) appendPUTHeaders(headers http.Header) {
 	appendHeaderIf(len(this.contentMD5) > 0, headers, headerContentMD5, this.contentMD5)
 	appendHeaderIf(len(this.contentEncoding) > 0, headers, headerContentEncoding, this.contentEncoding)
 	appendHeaderIf(len(this.generation) > 0, headers, headerGeneration, this.generation)
-	appendHeaderIf(this.encryption, headers, headerEncryptionAlgorithm, encryptionAlgorithm)
 }
 func appendHeaderIf(condition bool, headers http.Header, name, value string) {
 	if condition {
@@ -148,18 +146,16 @@ func appendHeaderIf(condition bool, headers http.Header, name, value string) {
 func defaultExpiration() time.Time { return time.Now().UTC().Add(defaultExpireTime) }
 
 const (
-	defaultScheme             = "https"
-	defaultHost               = "storage.googleapis.com"
-	headerContentType         = "Content-Type"
-	headerContentMD5          = "Content-MD5"
-	headerContentEncoding     = "Content-Encoding"
-	headerIfNoneMatch         = "If-None-Match"
-	headerEncryptionAlgorithm = "x-goog-encryption-algorithm"
-	headerGeneration          = "x-goog-if-generation-match"
-	queryAccessID             = "GoogleAccessId"
-	queryExpires              = "Expires"
-	querySignature            = "Signature"
-	encryptionAlgorithm       = "AES256"
+	defaultScheme         = "https"
+	defaultHost           = "storage.googleapis.com"
+	headerContentType     = "Content-Type"
+	headerContentMD5      = "Content-MD5"
+	headerContentEncoding = "Content-Encoding"
+	headerIfNoneMatch     = "If-None-Match"
+	headerGeneration      = "x-goog-if-generation-match"
+	queryAccessID         = "GoogleAccessId"
+	queryExpires          = "Expires"
+	querySignature        = "Signature"
 )
 
 var defaultExpireTime = time.Second * 30
