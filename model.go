@@ -96,7 +96,7 @@ func (this model) appendToBuffer(buffer io.Writer) {
 	// https://cloud.google.com/storage/docs/access-control/signed-urls
 	// https://cloud.google.com/storage/docs/access-control/signing-urls-manually
 	appendTo(buffer, "%s\n%s\n%s\n%s\n", this.method, this.contentMD5, this.contentType, this.epoch)
-	appendIf(this.encryption && this.method == PUT, buffer, "%s:%v\n", headerEncryptionAlgorithm, this.encryption)
+	appendIf(this.encryption && this.method == PUT, buffer, "%s:%s\n", headerEncryptionAlgorithm, this.encryption)
 	appendIf(len(this.generation) > 0 && this.method == PUT, buffer, "%s:%s\n", headerGeneration, this.generation)
 	appendTo(buffer, "%s", this.objectKey)
 }
