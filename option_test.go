@@ -228,7 +228,9 @@ func (this *OptionFixture) TestPUT_WithCredentials() {
 		WithExpiration(frozen),
 		PutWithContentMD5([]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5}),
 		PutWithContentString("content"),
-		PutWithContentType("content-type"))
+		PutWithContentType("content-type"),
+		PutWithServerSideEncryption(),
+		PutWithGeneration("12345678"))
 
-	this.So(request.URL.Query().Get("Signature"), should.Equal, "Y+lLTW0t4PU32OgEHqyGCUYcVUIUn3eFiyotfzSTJStD3K1w7dHZS0RmA1W6Wq+5NjaxzykMHz6IV1pjqs/azXaNO+cR7RyRzh8W46EHHtgfSv/joxMFzgNnEzHvqIKovbhyyVxTe4RSz5+XaUdapl3YNUHpt3BZzxNlMEB25vlqKr6fyHW0TaJ0EpI99sa6Xkxs/2hCqSb6MlycLDvw/0Ig3GP0P+hOApYQ67bcYEot8zKqdWjPcRStVyJvccEkrt30MVqMMPE0AP9YUYcPfdBbasc0yAroVaBabv03+u4V+xRI64Ijc7e3Vlr5B2leW6Fz1hHoRNlwBW51Aby3+A==")
+	this.So(request.URL.Query().Get("Signature"), should.Equal, "kiB3dtLcjNtiKsAS6dKhQ88ku7NQ4iBxA0A6wsKYQeIoGmrxTskT+G2AuQplR3izS/ujGS/Y7Y98QZEfMmdYA0oqxJGECs+y1PWCUK245ctBjIrvz/o1Aw58705uLImhXiLRF0WAfwBJEiDp8pz0/aiDQVy7kSs4rwkvnhGkiHixlS1ZFbSOwMYcdU/6Xsxd9AX0BCSskgRzgtbtG5298GYH2Adlvw7pcsT7nELhgWvaDxzZUoOxKPbp2+7iMOJ/ta+ceumn7G3/Ld+OtbSmu/pYCnE+GWOxjQd557ol05Fter1Sk9jW0pTNtL7wsEtyMH4TYWglDjTYzbtRXDTVbA==")
 }
