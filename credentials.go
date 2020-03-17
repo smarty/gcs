@@ -12,23 +12,58 @@ import (
 	"io"
 )
 
-func ParseCredentialsFromJSON(raw []byte) (Credentials, error) {
-	type serviceAccount struct {
-		PrivateKeyPEM string `json:"private_key"`
-		ClientEmail   string `json:"client_email"`
+func ParseCredentialsFromJSON(raw []byte, options ...ResolverOption) (Credentials, error) {
+	parsed, err := unmarshalClientCredentials(raw)
+	if err != nil {
+		return Credentials{}, err
 	}
 
-	parsed := serviceAccount{}
-	if err := json.Unmarshal(raw, &parsed); err != nil {
-		return Credentials{}, ErrMalformedJSON
-	} else {
-		return NewCredentials(parsed.ClientEmail, []byte(parsed.PrivateKeyPEM))
+	user := parsed.ClientIdentity()
+	if len(user.ID) == 0 {
+		return NewCredentials(parsed.ServiceAccount())
 	}
+
+	resolver := NewTokenResolver(options...)
+	accessToken, err := resolver.AccessToken(user)
+	if err != nil {
+		return Credentials{}, err
+	}
+
+	return Credentials{AccessToken: accessToken.Value}, nil
+}
+
+/* ////////////////////////////////////////////////////////////////////////////////////////////////////////////////// */
+
+type clientSecrets struct {
+	ClientID     string `json:"client_id"`
+	ClientSecret string `json:"client_secret"`
+	RefreshToken string `json:"refresh_token"`
+
+	ClientEmail   string `json:"client_email"`
+	PrivateKeyPEM string `json:"private_key"`
+}
+
+func unmarshalClientCredentials(raw []byte) (result clientSecrets, err error) {
+	err = json.Unmarshal(raw, &result)
+	return result, err
+}
+
+func (this clientSecrets) ClientIdentity() ClientIdentity {
+	return ClientIdentity{
+		ID:           this.ClientID,
+		Secret:       this.ClientSecret,
+		RefreshToken: this.RefreshToken,
+	}
+}
+func (this clientSecrets) ServiceAccount() (string, []byte) {
+	return this.ClientEmail, []byte(this.PrivateKeyPEM)
 }
 
 /* ////////////////////////////////////////////////////////////////////////////////////////////////////////////////// */
 
 type Credentials struct {
+	AccessToken string
+
 	AccessID   string
 	PrivateKey PrivateKey
 }
