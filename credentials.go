@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"errors"
+	"fmt"
 	"io"
 )
 
@@ -19,7 +20,7 @@ func ParseCredentialsFromJSON(raw []byte, options ...ResolverOption) (Credential
 	}
 
 	user := parsed.ClientIdentity()
-	if len(user.ID) == 0 {
+	if len(user.RefreshToken) == 0 {
 		return NewCredentials(parsed.ServiceAccount())
 	}
 
@@ -29,7 +30,8 @@ func ParseCredentialsFromJSON(raw []byte, options ...ResolverOption) (Credential
 		return Credentials{}, err
 	}
 
-	return Credentials{AccessToken: accessToken.Value}, nil
+	bearerToken := fmt.Sprintf("%s %s", accessToken.Type, accessToken.Value)
+	return Credentials{BearerToken: bearerToken}, nil
 }
 
 /* ////////////////////////////////////////////////////////////////////////////////////////////////////////////////// */
@@ -44,7 +46,9 @@ type clientSecrets struct {
 }
 
 func unmarshalClientCredentials(raw []byte) (result clientSecrets, err error) {
-	err = json.Unmarshal(raw, &result)
+	if err = json.Unmarshal(raw, &result); err != nil {
+		return clientSecrets{}, ErrMalformedJSON
+	}
 	return result, err
 }
 
@@ -62,7 +66,7 @@ func (this clientSecrets) ServiceAccount() (string, []byte) {
 /* ////////////////////////////////////////////////////////////////////////////////////////////////////////////////// */
 
 type Credentials struct {
-	AccessToken string
+	BearerToken string
 
 	AccessID   string
 	PrivateKey PrivateKey

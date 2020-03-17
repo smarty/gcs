@@ -116,12 +116,12 @@ func (this *OptionFixture) TestEndpoint() {
 	this.So(request.URL.Path, should.Equal, "/bucket/file.txt")
 }
 
-func (this *OptionFixture) Test_Expiration() {
+func (this *OptionFixture) Test_SignedExpiration() {
 	expiration := time.Now().UTC()
 	epoch := strconv.FormatInt(expiration.Unix(), 10)
 
 	requestWithExpiration, _ := NewRequest(GET, WithBucket("bucket"), WithResource("file.txt"),
-		WithExpiration(expiration))
+		WithSignedExpiration(expiration))
 
 	this.So(requestWithExpiration.URL.Query().Get("Expires"), should.Equal, epoch)
 }
@@ -201,24 +201,24 @@ func (this *OptionFixture) TestPUT_Generation() {
 }
 
 func (this *OptionFixture) TestGET_WithCredentials() {
-	credentials, _ := ParseCredentialsFromJSON(sampleJSON)
+	credentials, _ := ParseCredentialsFromJSON(sampleServiceAccountJSON)
 	credentials.PrivateKey.random = nil // make it deterministic so the signature doesn't change between test runs
 	frozen := time.Unix(1554410829, 0)  // fixed time so signature is deterministic
 
 	request, _ := NewRequest(GET, WithBucket("bucket"), WithResource("file.txt"),
-		WithCredentials(credentials), WithExpiration(frozen))
+		WithCredentials(credentials), WithSignedExpiration(frozen))
 
 	this.So(request.URL.Query().Get("Signature"), should.Equal, "PzVwB1N71A/p6wL7gP/Oh/nZdnsuoXQCszqFr/Q3jo6B5+ozZpuPIcuCW80+wtwUSBnKQJM4lcTVx6DtYrj2F3B/norqJPVdOHSCcG6bvGZ6oUjB2FQNzpQ1DyjY/mN0V8ziXe+FYPZzz6X0ewHJKaTHZb63BNQO92aMj/NMFYlN9FjdfdlE1G2La4oiT+Cjok47ncWw5UwhBXvJBEm8vgTtK2OU4AyqK+2vnOR/5PMBwTtU+82CmrnckOPeNZDyURiJvJenybIxrqOLzaaAsXvphQyz11XWt4Z8b+nqscQezuS6CcqKJiLDFvRcX0wXbzTxeOl00QWX3XGLaMUoGg==")
 }
 
 func (this *OptionFixture) TestPUT_WithCredentials() {
-	credentials, _ := ParseCredentialsFromJSON(sampleJSON)
+	credentials, _ := ParseCredentialsFromJSON(sampleServiceAccountJSON)
 	credentials.PrivateKey.random = nil // make it deterministic so the signature doesn't change between test runs
 	frozen := time.Unix(1554410829, 0)  // fixed time so signature is deterministic
 
 	request, _ := NewRequest(PUT, WithBucket("bucket"), WithResource("file.txt"),
 		WithCredentials(credentials),
-		WithExpiration(frozen),
+		WithSignedExpiration(frozen),
 		PutWithContentMD5([]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5}),
 		PutWithContentString("content"),
 		PutWithContentType("content-type"),

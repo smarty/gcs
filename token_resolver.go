@@ -49,8 +49,11 @@ func (this *defaultResolver) processResponse(response *http.Response, err error)
 	return this.unmarshalBody(response.Body)
 }
 func (this *defaultResolver) unmarshalBody(source io.Reader) (result AccessToken, err error) {
-	err = json.NewDecoder(source).Decode(&result)
-	return result, err
+	if err = json.NewDecoder(source).Decode(&result); err != nil {
+		return AccessToken{}, err
+	}
+
+	return result, nil
 }
 
 type accessTokenRequest struct {

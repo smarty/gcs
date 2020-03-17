@@ -2,6 +2,8 @@ package gcs
 
 import (
 	"bytes"
+	"io/ioutil"
+	"net/http"
 	"testing"
 
 	"github.com/smartystreets/assertions/should"
@@ -17,30 +19,59 @@ type CredentialsFixture struct {
 }
 
 func (this *CredentialsFixture) TestParsingCredentialFromJSON() {
-	parsed, err := ParseCredentialsFromJSON(sampleJSON)
+	parsed, err := ParseCredentialsFromJSON(sampleServiceAccountJSON)
 
 	this.So(err, should.BeNil)
 	this.So(parsed.AccessID, should.Equal, "sample-key@project-id-here.iam.gserviceaccount.com")
 }
 func (this *CredentialsFixture) TestParsingCredentialsFromMalformedJSON() {
-	malformedJSON := sampleJSON[0 : len(sampleJSON)/2]
+	malformedJSON := sampleServiceAccountJSON[0 : len(sampleServiceAccountJSON)/2]
 
 	parsed, err := ParseCredentialsFromJSON(malformedJSON)
 
 	this.So(err, should.Equal, ErrMalformedJSON)
-	this.So(parsed.AccessID, should.Equal, "")
+	this.So(parsed, should.Resemble, Credentials{})
 }
 func (this *CredentialsFixture) TestMalformedPrivateKey() {
-	malformedContents := bytes.ReplaceAll(sampleJSON, []byte("BEGIN PRIVATE KEY"), []byte{})
+	malformedContents := bytes.ReplaceAll(sampleServiceAccountJSON, []byte("BEGIN PRIVATE KEY"), []byte{})
 
-	parsed, err := ParseCredentialsFromJSON([]byte(malformedContents))
+	parsed, err := ParseCredentialsFromJSON(malformedContents)
 
 	this.So(err, should.Equal, ErrMalformedPrivateKey)
-	this.So(parsed.AccessID, should.Equal, "")
+	this.So(parsed, should.Resemble, Credentials{})
+}
+func (this *CredentialsFixture) TestClientIdentity() {
+	parsed, err := ParseCredentialsFromJSON(sampleClientIdentityJSON, WithResolverClient(this))
 
+	this.So(parsed, should.Resemble, Credentials{BearerToken: "ResolvedTokenType ResolvedAccessToken"})
+	this.So(err, should.BeNil)
+}
+func (this *CredentialsFixture) Do(_ *http.Request) (*http.Response, error) {
+	body := bytes.NewReader(sampleClientIdentityResponseJSON)
+	response := &http.Response{Body: ioutil.NopCloser(body), StatusCode: http.StatusOK}
+	return response, nil
 }
 
-var sampleJSON = []byte(`
+var sampleClientIdentityJSON = []byte(`
+{
+  "client_id": "MyClientID",
+  "client_secret": "MyClientSecret",
+  "refresh_token": "MyRefreshToken",
+  "type": "authorized_user"
+}
+`)
+
+var sampleClientIdentityResponseJSON = []byte(`
+{
+  "access_token": "ResolvedAccessToken",
+  "expires_in": 3599,
+  "scope": "scope1 scope2 scope3",
+  "token_type": "ResolvedTokenType",
+  "id_token": "IDTokenHere"
+}
+`)
+
+var sampleServiceAccountJSON = []byte(`
 {
   "type": "service_account",
   "project_id": "project-id-here",
