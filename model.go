@@ -29,7 +29,7 @@ type model struct {
 	contentLength   int64
 	content         io.Reader
 
-	// computed fields
+	// fields are computed during and after options are applied.
 	objectKey string
 	epoch     string
 }
