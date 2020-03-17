@@ -1,13 +1,10 @@
 package gcs
 
-import (
-	"context"
-	"net/http"
-)
+import "net/http"
 
 type (
 	TokenResolver interface {
-		AccessToken(context.Context, ClientIdentity) (AccessToken, error)
+		AccessToken(ClientIdentity) (AccessToken, error)
 	}
 	ClientIdentity struct {
 		ID           string `json:"client_id"`

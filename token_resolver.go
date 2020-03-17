@@ -10,13 +10,15 @@ import (
 )
 
 type defaultResolver struct {
-	client httpClient
+	client  httpClient
+	context context.Context
 }
 
 func NewTokenResolver(options ...ResolverOption) TokenResolver {
 	this := &defaultResolver{}
 
 	WithResolverClient(defaultHTTPClient())(this)
+	WithResolverContext(context.Background())(this)
 	for _, option := range options {
 		option(this)
 	}
@@ -24,9 +26,9 @@ func NewTokenResolver(options ...ResolverOption) TokenResolver {
 	return this
 }
 
-func (this *defaultResolver) AccessToken(context context.Context, identity ClientIdentity) (AccessToken, error) {
+func (this *defaultResolver) AccessToken(identity ClientIdentity) (AccessToken, error) {
 	request, _ := http.NewRequest("POST", tokenURL, this.generateRequestBody(identity))
-	request = request.WithContext(context)
+	request = request.WithContext(this.context)
 	response, err := this.client.Do(request)
 	return this.processResponse(response, err)
 }

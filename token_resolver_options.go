@@ -1,6 +1,7 @@
 package gcs
 
 import (
+	"context"
 	"net"
 	"net/http"
 	"time"
@@ -10,6 +11,9 @@ type ResolverOption func(this *defaultResolver)
 
 func WithResolverClient(value httpClient) ResolverOption {
 	return func(this *defaultResolver) { this.client = value }
+}
+func WithResolverContext(value context.Context) ResolverOption {
+	return func(this *defaultResolver) { this.context = value }
 }
 
 func defaultHTTPClient() *http.Client {
