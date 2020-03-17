@@ -35,14 +35,12 @@ type model struct {
 }
 
 func newModel(method string, options []Option) model {
-	this := &model{
-		method:  method,
-		scheme:  defaultScheme,
-		host:    defaultHost,
-		context: context.Background(),
-	}
+	this := &model{method: method}
 
+	WithEndpoint(defaultScheme, defaultHost)(this)
 	WithExpiration(defaultExpiration())(this)
+	WithContext(context.Background())(this)
+
 	this.applyOptions(options)
 	this.objectKey = path.Join("/", this.bucket, this.resource)
 
