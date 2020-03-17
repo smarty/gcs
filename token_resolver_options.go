@@ -2,7 +2,9 @@ package gcs
 
 import (
 	"context"
+	"net"
 	"net/http"
+	"time"
 )
 
 type ResolverOption func(this *defaultResolver)
@@ -14,4 +16,20 @@ func WithResolverContext(value context.Context) ResolverOption {
 	return func(this *defaultResolver) { this.context = value }
 }
 
-var defaultClient = &http.Client{} // TODO
+func defaultHTTPClient() *http.Client {
+	return &http.Client{
+		Transport: &http.Transport{
+			Proxy: http.ProxyFromEnvironment,
+			DialContext: (&net.Dialer{
+				Timeout:   1 * time.Second,
+				KeepAlive: 1 * time.Second,
+			}).DialContext,
+			MaxIdleConns:          4,
+			IdleConnTimeout:       32 * time.Second,
+			TLSHandshakeTimeout:   16 * time.Second,
+			ExpectContinueTimeout: 1 * time.Second,
+			MaxIdleConnsPerHost:   -1,
+			DisableKeepAlives:     true,
+		},
+	}
+}

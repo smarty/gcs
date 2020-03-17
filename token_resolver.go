@@ -17,8 +17,8 @@ type defaultResolver struct {
 func NewTokenResolver(options ...ResolverOption) TokenResolver {
 	this := &defaultResolver{}
 
-	WithResolverClient(defaultClient)
-	WithResolverContext(context.Background())
+	WithResolverClient(defaultHTTPClient())(this)
+	WithResolverContext(context.Background())(this)
 	for _, option := range options {
 		option(this)
 	}
