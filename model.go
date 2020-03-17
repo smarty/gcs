@@ -127,9 +127,7 @@ func (this model) appendHeaders(request *http.Request) {
 	}
 }
 func (this model) appendGETHeaders(headers http.Header) {
-	if len(this.etag) > 0 {
-		headers.Set(headerIfNoneMatch, this.etag)
-	}
+	appendHeaderIf(len(this.etag) > 0, headers, headerIfNoneMatch, this.etag)
 }
 func (this model) appendPUTHeaders(headers http.Header) {
 	appendHeaderIf(len(this.contentType) > 0, headers, headerContentType, this.contentType)
