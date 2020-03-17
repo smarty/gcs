@@ -121,15 +121,15 @@ func (this model) appendHeaders(request *http.Request) {
 	headers := request.Header
 
 	if this.method == GET {
-		appendHeaderIf(len(this.etag) > 0, headers, headerIfNoneMatch, this.etag)
+		tryAppendHeaders(len(this.etag) > 0, headers, headerIfNoneMatch, this.etag)
 	} else if this.method == PUT {
-		appendHeaderIf(len(this.contentType) > 0, headers, headerContentType, this.contentType)
-		appendHeaderIf(len(this.contentMD5) > 0, headers, headerContentMD5, this.contentMD5)
-		appendHeaderIf(len(this.contentEncoding) > 0, headers, headerContentEncoding, this.contentEncoding)
-		appendHeaderIf(len(this.generation) > 0, headers, headerGeneration, this.generation)
+		tryAppendHeaders(len(this.contentType) > 0, headers, headerContentType, this.contentType)
+		tryAppendHeaders(len(this.contentMD5) > 0, headers, headerContentMD5, this.contentMD5)
+		tryAppendHeaders(len(this.contentEncoding) > 0, headers, headerContentEncoding, this.contentEncoding)
+		tryAppendHeaders(len(this.generation) > 0, headers, headerGeneration, this.generation)
 	}
 }
-func appendHeaderIf(condition bool, headers http.Header, name, value string) {
+func tryAppendHeaders(condition bool, headers http.Header, name, value string) {
 	if condition {
 		headers.Set(name, value)
 	}
