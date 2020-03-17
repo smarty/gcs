@@ -27,19 +27,19 @@ func NewTokenResolver(options ...ResolverOption) TokenResolver {
 }
 
 func (this *defaultResolver) AccessToken(identity ClientIdentity) (AccessToken, error) {
-	request, _ := http.NewRequest("POST", tokenURL, generateResolveRequestBody(identity))
+	request, _ := http.NewRequest("POST", tokenURL, this.generateRequestBody(identity))
 	request = request.WithContext(this.context)
 	response, err := this.client.Do(request)
-	return processResponse(response, err)
+	return this.processResponse(response, err)
 }
-func generateResolveRequestBody(identity ClientIdentity) io.Reader {
+func (this *defaultResolver) generateRequestBody(identity ClientIdentity) io.Reader {
 	raw, _ := json.Marshal(struct {
 		ClientIdentity
 		GrantType string `json:"grant_type"`
 	}{ClientIdentity: identity, GrantType: "refresh_token"})
 	return bytes.NewBuffer(raw)
 }
-func processResponse(response *http.Response, err error) (AccessToken, error) {
+func (this *defaultResolver) processResponse(response *http.Response, err error) (AccessToken, error) {
 	if err != nil {
 		return emptyToken, err
 	}
@@ -49,9 +49,9 @@ func processResponse(response *http.Response, err error) (AccessToken, error) {
 		return emptyToken, ErrFailedTokenRequest
 	}
 
-	return unmarshalBody(response.Body)
+	return this.unmarshalBody(response.Body)
 }
-func unmarshalBody(source io.Reader) (result AccessToken, err error) {
+func (this *defaultResolver) unmarshalBody(source io.Reader) (result AccessToken, err error) {
 	err = json.NewDecoder(source).Decode(&result)
 	return result, err
 }
