@@ -14,7 +14,7 @@ type defaultResolver struct {
 	context context.Context
 }
 
-func NewTokenResolver(options ...ResolverOption) TokenResolver {
+func newTokenResolver(options ...ResolverOption) TokenResolver {
 	this := &defaultResolver{}
 
 	WithResolverClient(defaultHTTPClient())(this)

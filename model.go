@@ -32,6 +32,7 @@ type model struct {
 	// fields are computed during and after options are applied.
 	objectKey string
 	epoch     string
+	targetURL *url.URL
 }
 
 func newModel(method string, options []Option) model {
@@ -43,6 +44,7 @@ func newModel(method string, options []Option) model {
 
 	this.applyOptions(options)
 	this.objectKey = path.Join("/", this.bucket, this.resource)
+	this.targetURL = &url.URL{Scheme: this.scheme, Host: this.host, Path: this.objectKey}
 
 	return *this
 }
@@ -69,16 +71,32 @@ func (this model) validate() error {
 	return nil
 }
 
-func (this model) buildRequest() (*http.Request, error) {
-	if signature, err := this.calculateSignature(); err != nil {
+func (this model) buildRequest() (request *http.Request, err error) {
+	if request, err = http.NewRequest(this.method, this.targetURL.String(), this.content); err != nil {
 		return nil, err
-	} else if request, err := http.NewRequest(this.method, this.buildSignedURL(signature), this.content); err != nil {
-		return nil, err
-	} else {
-		request.ContentLength = this.contentLength
-		this.appendHeaders(request)
-		return request.WithContext(this.context), nil
 	}
+
+	if err = this.authorizeRequest(request); err != nil {
+		return nil, err
+	}
+
+	request.ContentLength = this.contentLength
+	this.appendHeaders(request)
+	return request.WithContext(this.context), nil
+}
+func (this model) authorizeRequest(request *http.Request) error {
+	if len(this.credentials.BearerToken) > 0 {
+		request.Header.Set("Authorization", this.credentials.BearerToken)
+		return nil
+	}
+
+	signature, err := this.calculateSignature()
+	if err != nil {
+		return err
+	}
+
+	request.URL = this.buildSignedURL(signature)
+	return nil
 }
 func (this model) calculateSignature() (string, error) {
 	buffer := bytes.NewBuffer(nil)
@@ -106,14 +124,15 @@ func appendTo(writer io.Writer, format string, values ...interface{}) {
 	_, _ = fmt.Fprintf(writer, format, values...)
 }
 
-func (this model) buildSignedURL(signature string) string {
-	targetURL := &url.URL{Scheme: this.scheme, Host: this.host, Path: this.objectKey}
-	query := targetURL.Query()
+func (this model) buildSignedURL(signature string) *url.URL {
+	query := this.targetURL.Query()
 	query.Set(queryAccessID, this.credentials.AccessID)
 	query.Set(queryExpires, this.epoch)
 	query.Set(querySignature, signature)
-	targetURL.RawQuery = query.Encode()
-	return targetURL.String()
+
+	target := *this.targetURL
+	target.RawQuery = query.Encode()
+	return &target
 }
 func (this model) appendHeaders(request *http.Request) {
 	headers := request.Header

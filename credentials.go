@@ -24,7 +24,7 @@ func ParseCredentialsFromJSON(raw []byte, options ...ResolverOption) (Credential
 		return NewCredentials(parsed.ServiceAccount())
 	}
 
-	resolver := NewTokenResolver(options...)
+	resolver := newTokenResolver(options...)
 	accessToken, err := resolver.AccessToken(user)
 	if err != nil {
 		return Credentials{}, err
