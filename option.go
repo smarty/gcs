@@ -24,9 +24,15 @@ func WithBucket(value string) Option {
 func WithResource(value string) Option {
 	return func(this *model) { this.resource = strings.TrimSpace(value) }
 }
+
+// Deprecated
 func WithExpiration(value time.Time) Option {
+	return WithSignedExpiration(value)
+}
+func WithSignedExpiration(value time.Time) Option {
 	return func(this *model) { this.epoch = strconv.FormatInt(value.Unix(), 10) }
 }
+
 func WithContext(value context.Context) Option {
 	return func(this *model) { this.context = value }
 }

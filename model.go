@@ -38,7 +38,7 @@ func newModel(method string, options []Option) model {
 	this := &model{method: method}
 
 	WithEndpoint(defaultScheme, defaultHost)(this)
-	WithExpiration(defaultExpiration())(this)
+	WithSignedExpiration(defaultExpiration())(this)
 	WithContext(context.Background())(this)
 
 	this.applyOptions(options)
