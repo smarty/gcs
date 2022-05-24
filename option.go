@@ -12,6 +12,9 @@ import (
 
 type Option func(*model)
 
+func WithBearerToken(value string) Option {
+	return func(this *model) { this.credentials = Credentials{BearerToken: value} }
+}
 func WithCredentials(credentials Credentials) Option {
 	return func(this *model) { this.credentials = credentials }
 }
