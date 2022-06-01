@@ -1,6 +1,7 @@
 package gcs
 
 import (
+	"bytes"
 	"crypto"
 	"crypto/rand"
 	"crypto/rsa"
@@ -14,6 +15,10 @@ import (
 )
 
 func ParseCredentialsFromJSON(raw []byte, options ...ResolverOption) (Credentials, error) {
+	if bytes.HasPrefix(raw, []byte("Bearer")) {
+		return Credentials{BearerToken: string(raw)}, nil
+	}
+
 	parsed, err := unmarshalClientCredentials(raw)
 	if err != nil {
 		return Credentials{}, err
