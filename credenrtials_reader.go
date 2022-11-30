@@ -75,19 +75,21 @@ func (this *defaultReader) resolveGoogleAccessToken(ctx context.Context) (Creden
 	if err != nil {
 		return Credentials{}, fmt.Errorf("unable to parse value specified in VAULT_ADDR: %w", err)
 	} else if len(parsed.Scheme) == 0 || len(parsed.Host) == 0 {
-		return Credentials{}, fmt.Errorf("unable to parse value specified in VAULT_ADDR")
+		return Credentials{}, fmt.Errorf("unable to parse value specified in VAULT_ADDR: the format must be https://domain:port")
 	}
 
 	request, _ := http.NewRequest("GET", parsed.Scheme+"://"+parsed.Host+"/v1/"+this.vaultKey, nil)
 	request.Header["X-Vault-Token"] = []string{this.vaultToken}
 
 	response, err := this.client.Do(request.WithContext(ctx))
-	if err != nil {
+	if err == context.Canceled || err == context.DeadlineExceeded {
+		return Credentials{}, err
+	} else if err != nil {
 		return Credentials{}, fmt.Errorf("unable to connect to the configured Vault server: %w", err)
 	}
 
 	defer func() { _ = response.Body.Close() }()
-	if response.StatusCode == http.StatusUnauthorized || response.StatusCode == http.StatusForbidden {
+	if response.StatusCode == http.StatusUnauthorized || response.StatusCode == http.StatusForbidden || response.StatusCode == http.StatusBadRequest {
 		return Credentials{}, fmt.Errorf("the Vault token provided did not have permission to read from [%s]", this.vaultKey)
 	} else if response.StatusCode != http.StatusOK {
 		return Credentials{}, fmt.Errorf("unexpected status from the Vault server [%d]", response.StatusCode)
@@ -98,7 +100,9 @@ func (this *defaultReader) resolveGoogleAccessToken(ctx context.Context) (Creden
 	}
 
 	raw, err := io.ReadAll(response.Body)
-	if err != nil {
+	if err == context.Canceled || err == context.DeadlineExceeded {
+		return Credentials{}, err
+	} else if err != nil {
 		return Credentials{}, fmt.Errorf("unable to read response from the Vault server: %w", err)
 	} else if len(raw) == 0 {
 		return Credentials{}, fmt.Errorf("zero-length response returned from the Vault server")
