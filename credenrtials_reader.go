@@ -2,6 +2,7 @@ package gcs
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -53,6 +54,14 @@ func (this *defaultReader) Read(ctx context.Context, value string) (Credentials,
 
 	if read, found := this.environmentReader.LookupEnv("GOOGLE_OAUTH_ACCESS_TOKEN"); found {
 		return Credentials{BearerToken: sanitizeToken(read)}, nil
+	}
+
+	if read, found := this.environmentReader.LookupEnv("GOOGLE_CREDENTIALS"); found {
+		if raw, err := base64.StdEncoding.DecodeString(read); err != nil {
+			return Credentials{}, fmt.Errorf("unable to base64 decode value from environment variable [GOOGLE_CREDENTIALS]: %w", err)
+		} else {
+			return ParseCredentialsFromJSON(raw, WithResolverClient(this.client), WithResolverContext(ctx))
+		}
 	}
 
 	if read, found := this.environmentReader.LookupEnv("GOOGLE_APPLICATION_CREDENTIALS"); found {
