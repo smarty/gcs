@@ -49,17 +49,18 @@ type defaultReader struct {
 
 func (this *defaultReader) Read(ctx context.Context, value string) (Credentials, error) {
 	if value = sanitizeToken(value); len(value) > 0 {
-		return Credentials{BearerToken: value}, nil
+		return Credentials{BearerToken: value}, nil // short-lived, OAuth access token provided by caller
 	}
 
 	if read, found := this.environmentReader.LookupEnv("GOOGLE_OAUTH_ACCESS_TOKEN"); found {
-		return Credentials{BearerToken: sanitizeToken(read)}, nil
+		return Credentials{BearerToken: sanitizeToken(read)}, nil // short-lived, OAuth access token (well-known environment variable)
 	}
 
 	if read, found := this.environmentReader.LookupEnv("GOOGLE_CREDENTIALS"); found {
 		if raw, err := base64.StdEncoding.DecodeString(read); err != nil {
 			return Credentials{}, fmt.Errorf("unable to base64 decode value from environment variable [GOOGLE_CREDENTIALS]: %w", err)
 		} else {
+			// base64-encoded representation of GOOGLE_APPLICATION_CREDENTIALS file (which itself is JSON encoded). Typically used by CI/CD pipelines and Terraform
 			return ParseCredentialsFromJSON(raw, WithResolverClient(this.client), WithResolverContext(ctx))
 		}
 	}
@@ -68,12 +69,13 @@ func (this *defaultReader) Read(ctx context.Context, value string) (Credentials,
 		if raw, err := this.fileReader.ReadFile(read); err != nil {
 			return Credentials{}, fmt.Errorf("unable to read file specified in [GOOGLE_APPLICATION_CREDENTIALS]: %w", err)
 		} else {
+			// path to file containing long-lived, JSON-encoded Service Account Key.
 			return ParseCredentialsFromJSON(raw, WithResolverClient(this.client), WithResolverContext(ctx))
 		}
 	}
 
 	if len(this.vaultAddress) > 0 && len(this.vaultToken) > 0 && len(this.vaultKey) > 0 {
-		return this.resolveGoogleAccessToken(ctx)
+		return this.resolveGoogleAccessToken(ctx) // use Vault's Google Cloud Secrets Engine to generate a short-lived, OAuth access token
 	}
 
 	return Credentials{}, ErrCredentialsFailure
