@@ -16,6 +16,12 @@ import (
 type CredentialsReader interface {
 	Read(context.Context, string) (Credentials, error)
 }
+type environmentReader interface {
+	LookupEnv(string) (string, bool)
+}
+type fileReader interface {
+	ReadFile(string) ([]byte, error)
+}
 
 var ErrCredentialsFailure = errors.New("unable to discover credentials")
 
@@ -23,18 +29,22 @@ func NewCredentialsReader(options ...credentialOption) CredentialsReader {
 	var config credentialConfig
 	CredentialOptions.apply(options...)(&config)
 	return &defaultReader{
-		client:       config.client,
-		vaultAddress: config.vaultAddress,
-		vaultToken:   config.vaultToken,
-		vaultKey:     config.vaultKey,
+		client:            config.client,
+		fileReader:        config.fileReader,
+		environmentReader: config.environmentReader,
+		vaultAddress:      config.vaultAddress,
+		vaultToken:        config.vaultToken,
+		vaultKey:          config.vaultKey,
 	}
 }
 
 type defaultReader struct {
-	client       httpClient
-	vaultAddress string
-	vaultToken   string
-	vaultKey     string
+	client            httpClient
+	fileReader        fileReader
+	environmentReader environmentReader
+	vaultAddress      string
+	vaultToken        string
+	vaultKey          string
 }
 
 func (this *defaultReader) Read(ctx context.Context, value string) (Credentials, error) {
@@ -42,20 +52,20 @@ func (this *defaultReader) Read(ctx context.Context, value string) (Credentials,
 		return Credentials{BearerToken: value}, nil
 	}
 
-	if value = sanitizeToken(os.Getenv("GOOGLE_OAUTH_ACCESS_TOKEN")); len(value) > 0 {
-		return Credentials{BearerToken: value}, nil
+	if read, found := this.environmentReader.LookupEnv("GOOGLE_OAUTH_ACCESS_TOKEN"); found {
+		return Credentials{BearerToken: sanitizeToken(read)}, nil
 	}
 
-	if value = os.Getenv("GOOGLE_CREDENTIALS"); len(value) > 0 {
-		if raw, err := base64.StdEncoding.DecodeString(value); err != nil {
+	if read, found := this.environmentReader.LookupEnv("GOOGLE_CREDENTIALS"); found {
+		if raw, err := base64.StdEncoding.DecodeString(read); err != nil {
 			return Credentials{}, fmt.Errorf("unable to base64 decode value from environment variable [GOOGLE_CREDENTIALS]: %w", err)
 		} else {
 			return ParseCredentialsFromJSON(raw, WithResolverClient(this.client), WithResolverContext(ctx))
 		}
 	}
 
-	if value = os.Getenv("GOOGLE_APPLICATION_CREDENTIALS"); len(value) > 0 {
-		if raw, err := os.ReadFile(value); err != nil {
+	if read, found := this.environmentReader.LookupEnv("GOOGLE_APPLICATION_CREDENTIALS"); found {
+		if raw, err := this.fileReader.ReadFile(read); err != nil {
 			return Credentials{}, fmt.Errorf("unable to read file specified in [GOOGLE_APPLICATION_CREDENTIALS]: %w", err)
 		} else {
 			return ParseCredentialsFromJSON(raw, WithResolverClient(this.client), WithResolverContext(ctx))
@@ -134,10 +144,12 @@ func sanitizeToken(value string) string {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 type credentialConfig struct {
-	client       httpClient
-	vaultAddress string
-	vaultToken   string
-	vaultKey     string
+	client            httpClient
+	fileReader        fileReader
+	environmentReader environmentReader
+	vaultAddress      string
+	vaultToken        string
+	vaultKey          string
 }
 type credentialSingleton struct{}
 type credentialOption func(*credentialConfig)
@@ -146,6 +158,12 @@ var CredentialOptions credentialSingleton
 
 func (credentialSingleton) HTTPClient(value httpClient) credentialOption {
 	return func(this *credentialConfig) { this.client = value }
+}
+func (credentialSingleton) FileReader(value fileReader) credentialOption {
+	return func(this *credentialConfig) { this.fileReader = value }
+}
+func (credentialSingleton) EnvironmentReader(value environmentReader) credentialOption {
+	return func(this *credentialConfig) { this.environmentReader = value }
 }
 func (credentialSingleton) VaultServer(address, token string) credentialOption {
 	return func(this *credentialConfig) { this.vaultAddress = address; this.vaultToken = token }
@@ -163,7 +181,14 @@ func (credentialSingleton) apply(options ...credentialOption) credentialOption {
 func (credentialSingleton) defaults(options ...credentialOption) []credentialOption {
 	return append([]credentialOption{
 		CredentialOptions.HTTPClient(defaultHTTPClient()),
+		CredentialOptions.FileReader(&externalSystem{}),
+		CredentialOptions.EnvironmentReader(&externalSystem{}),
 		CredentialOptions.VaultServer(os.Getenv("VAULT_ADDR"), os.Getenv("VAULT_TOKEN")),
 		CredentialOptions.VaultKey(os.Getenv("VAULT_KEY")),
 	}, options...)
 }
+
+type externalSystem struct{}
+
+func (*externalSystem) ReadFile(value string) ([]byte, error) { return os.ReadFile(value) }
+func (*externalSystem) LookupEnv(value string) (string, bool) { return os.LookupEnv(value) }
