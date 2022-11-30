@@ -12,6 +12,7 @@ import (
 
 type Option func(*model)
 
+// Deprecated
 func WithBearerToken(value string) Option {
 	return func(this *model) { this.credentials = Credentials{BearerToken: value} }
 }
