@@ -93,8 +93,10 @@ func (this *defaultReader) resolveGoogleAccessToken(ctx context.Context) (Creden
 	request.Header["X-Vault-Token"] = []string{this.vaultToken}
 
 	response, err := this.client.Do(request.WithContext(ctx))
-	if err == context.Canceled || err == context.DeadlineExceeded {
-		return Credentials{}, err
+	if errors.Is(err, context.Canceled) {
+		return Credentials{}, context.Canceled
+	} else if errors.Is(err, context.DeadlineExceeded) {
+		return Credentials{}, context.DeadlineExceeded
 	} else if err != nil {
 		return Credentials{}, fmt.Errorf("unable to connect to the configured Vault server: %w", err)
 	}
@@ -111,8 +113,10 @@ func (this *defaultReader) resolveGoogleAccessToken(ctx context.Context) (Creden
 	}
 
 	raw, err := io.ReadAll(response.Body)
-	if err == context.Canceled || err == context.DeadlineExceeded {
-		return Credentials{}, err
+	if errors.Is(err, context.Canceled) {
+		return Credentials{}, context.Canceled
+	} else if errors.Is(err, context.DeadlineExceeded) {
+		return Credentials{}, context.DeadlineExceeded
 	} else if err != nil {
 		return Credentials{}, fmt.Errorf("unable to read response from the Vault server: %w", err)
 	} else if len(raw) == 0 {
