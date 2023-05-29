@@ -26,7 +26,7 @@ func WithBucket(value string) Option {
 	return func(this *model) { this.bucket = strings.TrimSpace(value) }
 }
 func WithResource(value string) Option {
-	return func(this *model) { this.resource = strings.TrimSpace(value) }
+	return func(this *model) { this.resource = strings.TrimPrefix(strings.TrimSpace(value), "/") }
 }
 
 // Deprecated
