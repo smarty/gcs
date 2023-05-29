@@ -1,6 +1,6 @@
 module github.com/smartystreets/gcs
 
-go 1.17
+go 1.19
 
 require (
 	github.com/smartystreets/assertions v1.13.1
