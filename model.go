@@ -56,7 +56,7 @@ func (this *model) applyOptions(options []Option) {
 		}
 	}
 }
-func (this model) validate() error {
+func (this *model) validate() error {
 	if len(this.method) == 0 {
 		return ErrHTTPMethodMissing
 	} else if this.method != GET && this.method != PUT {
@@ -71,7 +71,7 @@ func (this model) validate() error {
 	return nil
 }
 
-func (this model) buildRequest() (request *http.Request, err error) {
+func (this *model) buildRequest() (request *http.Request, err error) {
 	if request, err = http.NewRequest(this.method, this.targetURL.String(), this.content); err != nil {
 		return nil, err
 	}
@@ -84,7 +84,7 @@ func (this model) buildRequest() (request *http.Request, err error) {
 	this.appendHeaders(request)
 	return request.WithContext(this.context), nil
 }
-func (this model) authorizeRequest(request *http.Request) error {
+func (this *model) authorizeRequest(request *http.Request) error {
 	if len(this.credentials.BearerToken) > 0 {
 		request.Header.Set("Authorization", this.credentials.BearerToken)
 		return nil
@@ -98,7 +98,7 @@ func (this model) authorizeRequest(request *http.Request) error {
 	request.URL = this.buildSignedURL(signature)
 	return nil
 }
-func (this model) calculateSignature() (string, error) {
+func (this *model) calculateSignature() (string, error) {
 	buffer := bytes.NewBuffer(nil)
 	this.appendToBuffer(buffer)
 
@@ -108,7 +108,7 @@ func (this model) calculateSignature() (string, error) {
 		return base64.StdEncoding.EncodeToString(signed), nil
 	}
 }
-func (this model) appendToBuffer(buffer io.Writer) {
+func (this *model) appendToBuffer(buffer io.Writer) {
 	// https://cloud.google.com/storage/docs/access-control/signed-urls
 	// https://cloud.google.com/storage/docs/access-control/signing-urls-manually
 	appendTo(buffer, "%s\n%s\n%s\n%s\n", this.method, this.contentMD5, this.contentType, this.epoch)
@@ -124,7 +124,7 @@ func appendTo(writer io.Writer, format string, values ...interface{}) {
 	_, _ = fmt.Fprintf(writer, format, values...)
 }
 
-func (this model) buildSignedURL(signature string) *url.URL {
+func (this *model) buildSignedURL(signature string) *url.URL {
 	query := this.targetURL.Query()
 	query.Set(queryAccessID, this.credentials.AccessID)
 	query.Set(queryExpires, this.epoch)
@@ -134,7 +134,7 @@ func (this model) buildSignedURL(signature string) *url.URL {
 	target.RawQuery = query.Encode()
 	return &target
 }
-func (this model) appendHeaders(request *http.Request) {
+func (this *model) appendHeaders(request *http.Request) {
 	headers := request.Header
 
 	if this.method == GET {
