@@ -109,10 +109,10 @@ func tryReadPrivateKey(key []byte) (*rsa.PrivateKey, error) {
 func tryParsePKCS8(key []byte) (*rsa.PrivateKey, error) {
 	if parsed, err := x509.ParsePKCS8PrivateKey(key); err != nil {
 		return nil, ErrMalformedPrivateKey
-	} else if parsed, ok := parsed.(*rsa.PrivateKey); !ok {
+	} else if parsedRSA, ok := parsed.(*rsa.PrivateKey); !ok {
 		return nil, ErrUnsupportedPrivateKey // e.g. ecdsa.PrivateKey
 	} else {
-		return parsed, nil
+		return parsedRSA, nil
 	}
 }
 
@@ -125,6 +125,8 @@ func (this *PrivateKey) Sign(raw []byte) ([]byte, error) {
 	return rsa.SignPKCS1v15(this.random, this.inner, crypto.SHA256, sum[:])
 }
 
-var ErrMalformedPrivateKey = errors.New("malformed private key")
-var ErrUnsupportedPrivateKey = errors.New("unsupported private key type")
-var ErrMalformedJSON = errors.New("malformed JSON")
+var (
+	ErrMalformedPrivateKey   = errors.New("malformed private key")
+	ErrUnsupportedPrivateKey = errors.New("unsupported private key type")
+	ErrMalformedJSON         = errors.New("malformed JSON")
+)
