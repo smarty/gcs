@@ -1,8 +1,8 @@
-module github.com/smartystreets/gcs
+module github.com/smarty/gcs
 
 go 1.19
 
 require (
-	github.com/smartystreets/assertions v1.13.1
-	github.com/smartystreets/gunit v1.4.5
+	github.com/smarty/assertions v1.13.1
+	github.com/smarty/gunit v1.4.5
 )
