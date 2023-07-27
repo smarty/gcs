@@ -2,7 +2,7 @@ package gcs
 
 import (
 	"context"
-	"io/ioutil"
+	"io"
 	"strconv"
 	"strings"
 	"testing"
@@ -164,7 +164,7 @@ func (this *OptionFixture) TestPUT_ContentBytes() {
 	request, _ := NewRequest(PUT, WithBucket("bucket"), WithResource("file.txt"),
 		PutWithContentBytes([]byte("hi")))
 
-	all, _ := ioutil.ReadAll(request.Body)
+	all, _ := io.ReadAll(request.Body)
 	this.So(string(all), should.Equal, "hi")
 	this.So(request.ContentLength, should.Equal, 2)
 }
@@ -173,7 +173,7 @@ func (this *OptionFixture) TestPUT_ContentString() {
 	request, _ := NewRequest(PUT, WithBucket("bucket"), WithResource("file.txt"),
 		PutWithContentString("hi"))
 
-	all, _ := ioutil.ReadAll(request.Body)
+	all, _ := io.ReadAll(request.Body)
 	this.So(string(all), should.Equal, "hi")
 	this.So(request.ContentLength, should.Equal, 2)
 }
@@ -182,7 +182,7 @@ func (this *OptionFixture) TestPUT_Content() {
 	request, _ := NewRequest(PUT, WithBucket("bucket"), WithResource("file.txt"),
 		PutWithContent(strings.NewReader("hi")))
 
-	all, _ := ioutil.ReadAll(request.Body)
+	all, _ := io.ReadAll(request.Body)
 	this.So(string(all), should.Equal, "hi")
 }
 

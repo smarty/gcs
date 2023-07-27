@@ -2,7 +2,7 @@ package gcs
 
 import (
 	"bytes"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"testing"
 
@@ -48,7 +48,7 @@ func (this *CredentialsFixture) TestClientIdentity() {
 }
 func (this *CredentialsFixture) Do(_ *http.Request) (*http.Response, error) {
 	body := bytes.NewReader(sampleClientIdentityResponseJSON)
-	response := &http.Response{Body: ioutil.NopCloser(body), StatusCode: http.StatusOK}
+	response := &http.Response{Body: io.NopCloser(body), StatusCode: http.StatusOK}
 	return response, nil
 }
 
