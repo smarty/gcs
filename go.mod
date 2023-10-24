@@ -1,6 +1,6 @@
 module github.com/smarty/gcs
 
-go 1.19
+go 1.21
 
 require (
 	github.com/smarty/assertions v1.15.0
