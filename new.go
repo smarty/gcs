@@ -15,8 +15,9 @@ func NewRequest(method string, options ...Option) (*http.Request, error) {
 }
 
 const (
-	GET = "GET"
-	PUT = "PUT"
+	GET  = "GET"
+	PUT  = "PUT"
+	HEAD = "HEAD"
 )
 
 var (

@@ -59,7 +59,7 @@ func (this *model) applyOptions(options []Option) {
 func (this *model) validate() error {
 	if len(this.method) == 0 {
 		return ErrHTTPMethodMissing
-	} else if this.method != GET && this.method != PUT {
+	} else if this.method != GET && this.method != PUT && this.method != HEAD {
 		return ErrHTTPMethodUnrecognized
 	} else if len(this.bucket) == 0 {
 		return ErrBucketMissing
