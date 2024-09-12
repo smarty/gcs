@@ -43,6 +43,7 @@ func (this *defaultResolver) processResponse(response *http.Response, err error)
 
 	defer func() { _ = response.Body.Close() }()
 	if response.StatusCode != http.StatusOK {
+		// TODO: drain response body
 		return emptyToken, ErrFailedTokenRequest
 	}
 

@@ -103,12 +103,15 @@ func (this *defaultReader) resolveGoogleAccessToken(ctx context.Context) (Creden
 
 	defer func() { _ = response.Body.Close() }()
 	if response.StatusCode == http.StatusUnauthorized || response.StatusCode == http.StatusForbidden || response.StatusCode == http.StatusBadRequest {
+		// TODO: drain response body
 		return Credentials{}, fmt.Errorf("the Vault token provided did not have permission to read from [%s]", this.vaultKey)
 	} else if response.StatusCode != http.StatusOK {
+		// TODO: drain response body
 		return Credentials{}, fmt.Errorf("unexpected status from the Vault server [%d]", response.StatusCode)
 	}
 
 	if strings.ToLower(response.Header.Get("Content-Type")) != "application/json" {
+		// TODO: drain response body
 		return Credentials{}, fmt.Errorf("unknown Content-Type from the Vault server [%s]", response.Header.Get("Content-Type"))
 	}
 
