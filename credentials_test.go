@@ -6,47 +6,43 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/smarty/assertions/should"
-	"github.com/smarty/gunit"
+	"github.com/smarty/gcs/internal/should"
 )
 
-func TestCredentialsFixture(t *testing.T) {
-	gunit.Run(new(CredentialsFixture), t)
-}
-
-type CredentialsFixture struct {
-	*gunit.Fixture
-}
-
-func (this *CredentialsFixture) TestParsingCredentialFromJSON() {
+func TestParsingCredentialFromJSON(t *testing.T) {
 	parsed, err := ParseCredentialsFromJSON(sampleServiceAccountJSON)
 
-	this.So(err, should.BeNil)
-	this.So(parsed.AccessID, should.Equal, "sample-key@project-id-here.iam.gserviceaccount.com")
+	should.So(t, err, should.BeNil)
+	should.So(t, parsed.AccessID, should.Equal, "sample-key@project-id-here.iam.gserviceaccount.com")
 }
-func (this *CredentialsFixture) TestParsingCredentialsFromMalformedJSON() {
+func TestParsingCredentialsFromMalformedJSON(t *testing.T) {
 	malformedJSON := sampleServiceAccountJSON[0 : len(sampleServiceAccountJSON)/2]
 
 	parsed, err := ParseCredentialsFromJSON(malformedJSON)
 
-	this.So(err, should.Equal, ErrMalformedJSON)
-	this.So(parsed, should.Resemble, Credentials{})
+	should.So(t, err, should.Equal, ErrMalformedJSON)
+	should.So(t, parsed, should.Equal, Credentials{})
 }
-func (this *CredentialsFixture) TestMalformedPrivateKey() {
+func TestMalformedPrivateKey(t *testing.T) {
 	malformedContents := bytes.ReplaceAll(sampleServiceAccountJSON, []byte("BEGIN PRIVATE KEY"), []byte{})
 
 	parsed, err := ParseCredentialsFromJSON(malformedContents)
 
-	this.So(err, should.Equal, ErrMalformedPrivateKey)
-	this.So(parsed, should.Resemble, Credentials{})
+	should.So(t, err, should.Equal, ErrMalformedPrivateKey)
+	should.So(t, parsed, should.Equal, Credentials{})
 }
-func (this *CredentialsFixture) TestClientIdentity() {
-	parsed, err := ParseCredentialsFromJSON(sampleClientIdentityJSON, WithResolverClient(this))
+func TestClientIdentity(t *testing.T) {
+	var client FakeClient
 
-	this.So(parsed, should.Resemble, Credentials{BearerToken: "ResolvedTokenType ResolvedAccessToken"})
-	this.So(err, should.BeNil)
+	parsed, err := ParseCredentialsFromJSON(sampleClientIdentityJSON, WithResolverClient(client))
+
+	should.So(t, parsed, should.Equal, Credentials{BearerToken: "ResolvedTokenType ResolvedAccessToken"})
+	should.So(t, err, should.BeNil)
 }
-func (this *CredentialsFixture) Do(_ *http.Request) (*http.Response, error) {
+
+type FakeClient struct{}
+
+func (this FakeClient) Do(_ *http.Request) (*http.Response, error) {
 	body := bytes.NewReader(sampleClientIdentityResponseJSON)
 	response := &http.Response{Body: io.NopCloser(body), StatusCode: http.StatusOK}
 	return response, nil
